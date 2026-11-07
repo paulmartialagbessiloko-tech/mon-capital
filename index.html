@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b4a3e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mon Capital">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Mon Capital</title>
+<style>
+:root {
+  /* Carnet de caisse : vert billet profond + touche or, chiffres alignés, navigation au pouce en bas */
+  --bg: #eef2ef;
+  --surface: #ffffff;
+  --ink: #142220;
+  --muted: #5b6b66;
+  --line: #dce4df;
+  --accent: #0b4a3e;
+  --accent-2: #12705c;
+  --accent-soft: #e0eee8;
+  --gold: #e9c46a;
+  --out: #c0362c;
+  --out-soft: #fbe9e7;
+  --in: #1b7a3d;
+  --in-soft: #e3f4e8;
+  --shadow: 0 1px 2px rgba(10, 40, 30, .06), 0 6px 18px rgba(10, 40, 30, .07);
+  --radius: 16px;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --font-display: "Segoe UI Semibold", "Roboto", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0c1311;
+    --surface: #151f1c;
+    --ink: #e6eeeb;
+    --muted: #95a6a0;
+    --line: #26332f;
+    --accent: #0f3d33;
+    --accent-2: #4fc3a1;
+    --accent-soft: #1a332c;
+    --gold: #e9c46a;
+    --out: #ff8a80;
+    --out-soft: #3a1f1d;
+    --in: #7ddc95;
+    --in-soft: #1a3322;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 22px rgba(0, 0, 0, .25);
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body);
+  font-size: 16px; line-height: 1.4;
+  padding-bottom: calc(84px + env(safe-area-inset-bottom));
+}
+
+/* ---------- En-tête ---------- */
+header {
+  position: relative; overflow: hidden; color: #fff;
+  background: radial-gradient(120% 140% at 100% 0%, #1a8a70 0%, transparent 55%), linear-gradient(160deg, #0e5a4b, #0a3f35);
+  padding: calc(16px + env(safe-area-inset-top)) 18px 22px;
+  border-radius: 0 0 26px 26px;
+  box-shadow: 0 10px 30px rgba(8, 50, 40, .25);
+}
+header::after {
+  content: ""; position: absolute; right: -40px; top: -40px; width: 170px; height: 170px;
+  border-radius: 50%; border: 22px solid rgba(233, 196, 106, .14); pointer-events: none;
+}
+.brand { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.brand i { width: 26px; height: 26px; border-radius: 8px; background: rgba(255,255,255,.14); display: grid; place-items: center; }
+.brand i svg { width: 16px; height: 16px; }
+.brand h1 { margin: 0; font-family: var(--font-display); font-size: 14px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; opacity: .9; }
+.solde-label { font-size: 13px; opacity: .78; }
+.solde { font-family: var(--font-display); font-size: 36px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.01em; transition: color .3s; }
+.solde.neg { color: #ffb4ab; }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.tile { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.12); border-radius: 12px; padding: 9px 12px; backdrop-filter: blur(4px); }
+.tile span { display: block; font-size: 12px; opacity: .78; }
+.tile b { font-size: 17px; font-variant-numeric: tabular-nums; }
+
+.install-btn { display: none; margin-top: 14px; width: 100%; border: 0; border-radius: 12px; padding: 11px; font: inherit; font-weight: 600; background: var(--gold); color: #2b2205; cursor: pointer; box-shadow: 0 4px 14px rgba(233,196,106,.35); transition: transform .12s; }
+.install-btn.show { display: block; animation: viewIn .4s var(--ease); }
+.install-btn:active { transform: scale(.97); }
+
+/* ---------- Vues ---------- */
+main { padding: 18px 16px; max-width: 720px; margin: 0 auto; }
+.view { display: none; gap: 16px; }
+.view.active { display: grid; animation: viewIn .32s var(--ease); }
+@keyframes viewIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
+.card h2 { margin: 0 0 12px; font-family: var(--font-display); font-size: 17px; text-wrap: balance; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.card h2 small { font-size: 12px; font-weight: 500; color: var(--muted); }
+
+/* ---------- Formulaires ---------- */
+form { display: grid; gap: 12px; }
+label { font-size: 13px; color: var(--muted); display: grid; gap: 5px; font-weight: 500; }
+.field { transition: opacity .25s, max-height .3s var(--ease); max-height: 120px; overflow: hidden; }
+.field.hide { opacity: 0; max-height: 0; pointer-events: none; margin-top: -12px; }
+input, select {
+  font: inherit; color: var(--ink); background: var(--bg);
+  border: 1.5px solid transparent; border-radius: 10px; padding: 12px 13px; width: 100%;
+  transition: border-color .2s, background .2s, box-shadow .2s;
+}
+input:focus, select:focus { outline: none; border-color: var(--accent-2); background: var(--surface); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-2) 18%, transparent); }
+button:focus-visible, tr.item:focus-visible { outline: 2.5px solid var(--accent-2); outline-offset: 2px; }
+#fMontant { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; padding: 12px 13px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row2.single { grid-template-columns: 1fr; }
+
+.seg { position: relative; display: grid; grid-template-columns: 1fr 1fr; background: var(--bg); border-radius: 12px; padding: 4px; }
+.seg::before {
+  content: ""; position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 4px);
+  border-radius: 9px; background: var(--out); box-shadow: 0 3px 10px color-mix(in srgb, var(--out) 35%, transparent);
+  transition: transform .3s var(--ease), background .3s;
+}
+.seg.ent::before { transform: translateX(100%); background: var(--in); box-shadow: 0 3px 10px color-mix(in srgb, var(--in) 35%, transparent); }
+.seg button { position: relative; z-index: 1; border: 0; background: none; color: var(--muted); padding: 10px; font: inherit; font-weight: 600; cursor: pointer; border-radius: 9px; transition: color .25s; }
+.seg button.on { color: #fff; }
+@media (prefers-color-scheme: dark) { .seg button.on { color: #0c1311; } }
+
+.btn {
+  position: relative; overflow: hidden;
+  font: inherit; font-weight: 600; border: 0; border-radius: 12px; padding: 14px; cursor: pointer;
+  background: linear-gradient(180deg, var(--accent-2), var(--accent)); color: #fff;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 30%, transparent);
+  transition: transform .12s var(--ease), box-shadow .2s, filter .2s;
+}
+.btn:active { transform: scale(.97); box-shadow: 0 2px 6px color-mix(in srgb, var(--accent) 25%, transparent); }
+.btn.dep { background: linear-gradient(180deg, #d84a3f, #b02c22); box-shadow: 0 4px 14px rgba(192, 54, 44, .3); }
+.btn.ent { background: linear-gradient(180deg, #23934b, #176a34); box-shadow: 0 4px 14px rgba(27, 122, 61, .3); }
+.btn.ghost { background: var(--accent-soft); color: var(--accent-2); box-shadow: none; }
+@media (prefers-color-scheme: light) { .btn.ghost { color: var(--accent); } }
+.btn.danger { background: var(--out-soft); color: var(--out); box-shadow: none; }
+.btn.danger.solid { background: var(--out); color: #fff; }
+.ripple { position: absolute; border-radius: 50%; background: rgba(255,255,255,.45); transform: scale(0); animation: ripple .55s ease-out; pointer-events: none; }
+@keyframes ripple { to { transform: scale(2.6); opacity: 0; } }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.actions .btn { flex: 1 1 140px; }
+
+.chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 4px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { flex: 0 0 auto; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: 13px; padding: 7px 12px; border-radius: 20px; cursor: pointer; transition: background .2s, transform .12s; }
+.chip:active { transform: scale(.94); background: var(--accent-soft); }
+
+/* ---------- Mois ---------- */
+.toolbar { display: flex; gap: 10px; align-items: center; }
+.toolbar input { flex: 1; text-align: center; font-weight: 600; }
+.toolbar button { flex: 0 0 46px; height: 46px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 22px; cursor: pointer; transition: transform .12s, background .2s; }
+.toolbar button:active { transform: scale(.92); background: var(--accent-soft); }
+
+/* ---------- Tableaux ---------- */
+.table-wrap { overflow-x: auto; margin: 0 -6px; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+th { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+td.num, th.num { text-align: right; white-space: nowrap; font-weight: 600; }
+tr.day td { background: var(--accent-soft); font-weight: 700; color: var(--accent-2); font-size: 14px; border-bottom: 0; }
+@media (prefers-color-scheme: light) { tr.day td { color: var(--accent); } }
+tr.day td:first-child { border-radius: 10px 0 0 10px; text-transform: capitalize; }
+tr.day td:last-child { border-radius: 0 10px 10px 0; }
+tr.item { cursor: pointer; transition: background .15s; }
+tr.item:active td { background: var(--bg); }
+@media (hover: hover) { tr.item:hover td { background: var(--bg); } }
+tr.item.flash td { animation: flash 1.4s ease-out; }
+@keyframes flash { from { background: color-mix(in srgb, var(--gold) 45%, transparent); } to { background: transparent; } }
+.who { display: flex; align-items: center; gap: 10px; }
+.dot { flex: 0 0 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; font-size: 14px; font-weight: 700; }
+.dot.out { background: var(--out-soft); color: var(--out); }
+.dot.in { background: var(--in-soft); color: var(--in); }
+.cat { font-size: 12px; color: var(--muted); display: block; font-weight: 400; }
+tr.total td { font-weight: 700; border-bottom: 0; padding-top: 12px; }
+tr.total:first-of-type td { border-top: 2px solid var(--ink); }
+.out { color: var(--out); }
+.in { color: var(--in); }
+.empty { color: var(--muted); text-align: center; padding: 26px 8px; border: 0; }
+.empty svg { display: block; margin: 0 auto 8px; width: 40px; height: 40px; opacity: .45; }
+
+/* ---------- Bilan ---------- */
+.bar-row { display: grid; grid-template-columns: 110px 1fr auto; gap: 10px; align-items: center; font-size: 14px; padding: 6px 0; }
+.bar-row span { overflow-wrap: anywhere; }
+.bar { height: 12px; background: var(--bg); border-radius: 6px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #e0675d, var(--out)); border-radius: 6px; transition: width .7s var(--ease); }
+.bar.green i { background: linear-gradient(90deg, #4cb36f, var(--in)); }
+.bar-row b { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+.kv { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.kv div { background: var(--bg); border-radius: 12px; padding: 10px 12px; }
+.kv span { display: block; font-size: 12px; color: var(--muted); }
+.kv b { font-size: 17px; font-variant-numeric: tabular-nums; }
+.hint { font-size: 13px; color: var(--muted); margin: 0; }
+
+/* ---------- Navigation ---------- */
+nav {
+  position: fixed; left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 5;
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  background: color-mix(in srgb, var(--surface) 88%, transparent); backdrop-filter: blur(14px);
+  border: 1px solid var(--line); border-radius: 20px; padding: 6px; box-shadow: 0 10px 30px rgba(0,0,0,.14);
+  max-width: 560px; margin: 0 auto;
+}
+nav button { position: relative; border: 0; background: none; color: var(--muted); font: inherit; font-size: 11.5px; padding: 7px 4px 8px; display: grid; justify-items: center; gap: 2px; cursor: pointer; border-radius: 14px; transition: color .25s, background .25s, transform .12s; }
+nav button:active { transform: scale(.92); }
+nav button svg { width: 23px; height: 23px; transition: transform .3s var(--ease); }
+nav button.active { color: var(--accent-2); background: var(--accent-soft); font-weight: 600; }
+@media (prefers-color-scheme: light) { nav button.active { color: var(--accent); } }
+nav button.active svg { transform: translateY(-1px) scale(1.08); }
+
+/* ---------- Toast & fenêtres ---------- */
+.toast { position: fixed; left: 50%; bottom: calc(100px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); background: var(--ink); color: var(--bg); padding: 11px 18px; border-radius: 22px; font-size: 14px; font-weight: 500; opacity: 0; transition: opacity .25s, transform .35s var(--ease); pointer-events: none; z-index: 20; max-width: calc(100% - 32px); text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.modal { position: fixed; inset: 0; background: rgba(5, 15, 12, .5); display: flex; align-items: flex-end; justify-content: center; z-index: 10; opacity: 0; visibility: hidden; transition: opacity .25s, visibility 0s .25s; }
+.modal.open { opacity: 1; visibility: visible; transition: opacity .25s; }
+.sheet { background: var(--surface); width: 100%; max-width: 560px; border-radius: 22px 22px 0 0; padding: 10px 16px calc(18px + env(safe-area-inset-bottom)); display: grid; gap: 12px; transform: translateY(100%); transition: transform .35s var(--ease); max-height: 92vh; overflow-y: auto; }
+.modal.open .sheet { transform: none; }
+.sheet::before { content: ""; justify-self: center; width: 40px; height: 4px; border-radius: 2px; background: var(--line); }
+.sheet h2 { margin: 0; font-size: 18px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (max-width: 380px) { .bar-row { grid-template-columns: 80px 1fr auto; } .solde { font-size: 30px; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <i><svg viewBox="0 0 24 24" fill="none" stroke="#e9c46a" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v8"/></svg></i>
+    <h1>Mon Capital</h1>
+  </div>
+  <div class="solde-label">Capital disponible</div>
+  <div class="solde" id="solde">0</div>
+  <div class="tiles">
+    <div class="tile"><span>Dépensé aujourd'hui</span><b id="tToday">0</b></div>
+    <div class="tile"><span>Dépensé ce mois</span><b id="tMonth">0</b></div>
+  </div>
+  <button type="button" class="install-btn" id="installBtn">Installer l'application sur mon téléphone</button>
+</header>
+
+<main>
+  <!-- AJOUTER -->
+  <section class="view active" id="v-add">
+    <div class="card">
+      <h2>Nouvelle opération</h2>
+      <form id="addForm" autocomplete="off">
+        <div class="seg" id="addSeg" role="group" aria-label="Type d'opération">
+          <button type="button" data-type="dep" class="on">Dépense</button>
+          <button type="button" data-type="ent">Entrée d'argent</button>
+        </div>
+        <label for="fMontant">Montant (<span class="devise">FCFA</span>)
+          <input id="fMontant" type="number" inputmode="decimal" min="0" step="any" placeholder="0" required>
+        </label>
+        <label for="fLibelle"><span id="fLibelleLbl">Produit ou chose achetée</span>
+          <input id="fLibelle" type="text" list="libelles" placeholder="Ex : Riz 5 kg" required>
+          <datalist id="libelles"></datalist>
+        </label>
+        <div class="chips" id="quick" aria-label="Saisie rapide"></div>
+        <div class="row2" id="addRow">
+          <label for="fCat" class="field" id="fCatField">Catégorie
+            <select id="fCat"></select>
+          </label>
+          <label for="fDate">Date
+            <input id="fDate" type="date" required>
+          </label>
+        </div>
+        <button class="btn dep" type="submit" id="addBtn">Enregistrer la dépense</button>
+      </form>
+    </div>
+    <div class="card">
+      <h2>Aujourd'hui <small id="todayCount"></small></h2>
+      <div class="table-wrap"><table id="todayTable"></table></div>
+    </div>
+  </section>
+
+  <!-- TABLEAU -->
+  <section class="view" id="v-table">
+    <div class="card">
+      <div class="toolbar">
+        <button type="button" id="prevM" aria-label="Mois précédent">‹</button>
+        <input type="month" id="fMonth" aria-label="Mois affiché">
+        <button type="button" id="nextM" aria-label="Mois suivant">›</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2 id="tableTitle">Tableau du mois</h2>
+      <p class="hint" style="margin-bottom:8px">Touche une ligne pour la modifier ou la supprimer.</p>
+      <div class="table-wrap"><table id="monthTable"></table></div>
+    </div>
+  </section>
+
+  <!-- BILAN -->
+  <section class="view" id="v-stats">
+    <div class="card">
+      <div class="toolbar">
+        <button type="button" id="prevS" aria-label="Mois précédent">‹</button>
+        <input type="month" id="sMonth" aria-label="Mois du bilan">
+        <button type="button" id="nextS" aria-label="Mois suivant">›</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Résumé du mois</h2>
+      <div class="kv" id="statKv"></div>
+    </div>
+    <div class="card">
+      <h2>Dépenses par catégorie</h2>
+      <div id="catBars"></div>
+    </div>
+    <div class="card">
+      <h2>Dépenses par jour</h2>
+      <div id="dayBars"></div>
+    </div>
+    <div class="card">
+      <h2>Ce que j'achète le plus</h2>
+      <div id="topItems"></div>
+    </div>
+    <div class="card">
+      <h2>D'où vient mon argent</h2>
+      <div id="srcBars"></div>
+    </div>
+  </section>
+
+  <!-- RÉGLAGES -->
+  <section class="view" id="v-settings">
+    <div class="card">
+      <h2>Mon capital de départ</h2>
+      <form id="setForm">
+        <label for="sCapital">Capital de départ (<span class="devise">FCFA</span>)
+          <input id="sCapital" type="number" inputmode="decimal" step="any" placeholder="Ex : 500000">
+        </label>
+        <label for="sDevise">Monnaie affichée
+          <input id="sDevise" type="text" maxlength="6" placeholder="FCFA">
+        </label>
+        <button class="btn" type="submit">Enregistrer les réglages</button>
+      </form>
+      <p class="hint" style="margin-top:10px">Capital disponible = capital de départ + entrées d'argent − dépenses.</p>
+    </div>
+    <div class="card">
+      <h2>Sauvegarde</h2>
+      <p class="hint" style="margin-bottom:12px">Tes données sont gardées dans le navigateur de ce téléphone. Fais une sauvegarde de temps en temps pour ne rien perdre si tu changes de téléphone ou vides le navigateur.</p>
+      <div class="actions">
+        <button class="btn ghost" type="button" id="expJson">Sauvegarder (fichier)</button>
+        <button class="btn ghost" type="button" id="impJson">Restaurer une sauvegarde</button>
+        <button class="btn ghost" type="button" id="expCsv">Exporter pour Excel</button>
+      </div>
+      <input type="file" id="impFile" accept=".json,application/json" hidden>
+    </div>
+    <div class="card">
+      <h2>Tout effacer</h2>
+      <p class="hint" style="margin-bottom:12px">Supprime toutes les opérations et les réglages de ce téléphone.</p>
+      <button class="btn danger" type="button" id="wipe">Effacer toutes les données</button>
+    </div>
+  </section>
+</main>
+
+<nav>
+  <button type="button" data-view="v-add" class="active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Ajouter</button>
+  <button type="button" data-view="v-table">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 14h18M9 9v11"/></svg>Tableau</button>
+  <button type="button" data-view="v-stats">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>Bilan</button>
+  <button type="button" data-view="v-settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>Réglages</button>
+</nav>
+
+<!-- Fenêtre modifier -->
+<div class="modal" id="editModal" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+  <form class="sheet" id="editForm">
+    <h2 id="editTitle">Modifier l'opération</h2>
+    <div class="seg" role="group" aria-label="Type d'opération" id="eSeg">
+      <button type="button" data-type="dep">Dépense</button>
+      <button type="button" data-type="ent">Entrée d'argent</button>
+    </div>
+    <label for="eMontant">Montant <input id="eMontant" type="number" inputmode="decimal" min="0" step="any" required></label>
+    <label for="eLibelle"><span id="eLibelleLbl">Produit ou chose achetée</span> <input id="eLibelle" type="text" required></label>
+    <div class="row2" id="eRow">
+      <label for="eCat" class="field" id="eCatField">Catégorie <select id="eCat"></select></label>
+      <label for="eDate">Date <input id="eDate" type="date" required></label>
+    </div>
+    <div class="actions">
+      <button class="btn" type="submit">Enregistrer</button>
+      <button class="btn danger" type="button" id="eDelete">Supprimer</button>
+    </div>
+    <button class="btn ghost" type="button" id="eCancel">Annuler</button>
+  </form>
+</div>
+
+<!-- Fenêtre confirmer -->
+<div class="modal" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmText">
+  <div class="sheet">
+    <h2 id="confirmText">Confirmer ?</h2>
+    <div class="actions">
+      <button class="btn danger solid" type="button" id="cYes">Oui, supprimer</button>
+      <button class="btn ghost" type="button" id="cNo">Non</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  "use strict";
+  var KEY = "monCapital.v1";
+  var CATS_DEP = ["Nourriture", "Transport", "Marchandise / Stock", "Loyer", "Électricité / Eau", "Téléphone / Internet", "Santé", "Famille", "Vêtements", "Loisirs", "Autre"];
+  var LBL = {
+    dep: { libelle: "Produit ou chose achetée", ph: "Ex : Riz 5 kg", btn: "Enregistrer la dépense" },
+    ent: { libelle: "D'où vient l'argent ?", ph: "Ex : Papa, tontine, client Koffi…", btn: "Enregistrer l'entrée" }
+  };
+  var reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---------- Données ----------
+  var data = load();
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (raw) {
+        var d = JSON.parse(raw);
+        if (d && Array.isArray(d.ops)) return normalise(d);
+      }
+    } catch (e) {}
+    return { capital: 0, devise: "FCFA", ops: [] };
+  }
+  function normalise(d) {
+    return {
+      capital: Number(d.capital) || 0,
+      devise: String(d.devise || "FCFA").slice(0, 6),
+      ops: d.ops.filter(function (o) { return o && o.date && isFinite(o.montant); }).map(function (o) {
+        var type = o.type === "ent" ? "ent" : "dep";
+        return { id: String(o.id || uid()), type: type, montant: Math.abs(Number(o.montant)), libelle: String(o.libelle || ""), cat: type === "ent" ? "" : String(o.cat || "Autre"), date: String(o.date).slice(0, 10), t: Number(o.t) || Date.now() };
+      })
+    };
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(data)); return true; }
+    catch (e) { toast("Impossible d'enregistrer : mémoire du navigateur pleine ou bloquée."); return false; }
+  }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+  // ---------- Utilitaires ----------
+  var $ = function (id) { return document.getElementById(id); };
+  var nf = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 });
+  function money(n) { return nf.format(n) + " " + data.devise; }
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function todayStr() { var d = new Date(); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function monthOf(s) { return s.slice(0, 7); }
+  function shiftMonth(m, delta) { var d = new Date(+m.slice(0, 4), +m.slice(5, 7) - 1 + delta, 1); return d.getFullYear() + "-" + pad(d.getMonth() + 1); }
+  var MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+  var JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+  function monthLabel(m) { return MOIS[+m.slice(5, 7) - 1] + " " + m.slice(0, 4); }
+  function dayLabel(ds) { var p = ds.split("-"); var d = new Date(+p[0], +p[1] - 1, +p[2]); return JOURS[d.getDay()] + " " + (+p[2]) + " " + MOIS[+p[1] - 1]; }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function sum(list, type) { return list.reduce(function (a, o) { return a + (o.type === type ? o.montant : 0); }, 0); }
+  function sorted(list) { return list.slice().sort(function (a, b) { return a.date === b.date ? b.t - a.t : (a.date < b.date ? 1 : -1); }); }
+  function initial(s) { var c = String(s).trim().charAt(0); return c ? c.toUpperCase() : "?"; }
+  function vibrate(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
+
+  var toastTimer;
+  function toast(msg) { var t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2400); }
+
+  // Effet d'onde sur les boutons
+  document.addEventListener("pointerdown", function (e) {
+    var b = e.target.closest(".btn"); if (!b || reduceMotion) return;
+    var r = b.getBoundingClientRect(), s = Math.max(r.width, r.height);
+    var w = document.createElement("span"); w.className = "ripple";
+    w.style.width = w.style.height = s + "px";
+    w.style.left = (e.clientX - r.left - s / 2) + "px"; w.style.top = (e.clientY - r.top - s / 2) + "px";
+    b.appendChild(w); setTimeout(function () { w.remove(); }, 600);
+  });
+
+  // Compteur animé du capital
+  var shown = {};
+  function countTo(el, value) {
+    var from = shown[el.id] == null ? value : shown[el.id];
+    shown[el.id] = value;
+    if (reduceMotion || from === value) { el.textContent = money(value); return; }
+    var start = performance.now(), dur = 550;
+    (function step(now) {
+      var k = Math.min(1, (now - start) / dur); k = 1 - Math.pow(1 - k, 3);
+      el.textContent = money(Math.round((from + (value - from) * k) * 100) / 100);
+      if (k < 1) requestAnimationFrame(step);
+    })(start);
+  }
+
+  function fillCats(select, current) {
+    var cats = CATS_DEP;
+    if (current && cats.indexOf(current) < 0) cats = cats.concat([current]);
+    select.innerHTML = cats.map(function (c) { return "<option" + (c === current ? " selected" : "") + ">" + esc(c) + "</option>"; }).join("");
+  }
+  // Affiche ou cache la catégorie selon le type
+  function applyType(seg, catField, row, lblEl, input, type) {
+    seg.classList.toggle("ent", type === "ent");
+    seg.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b.dataset.type === type); });
+    catField.classList.toggle("hide", type === "ent");
+    row.classList.toggle("single", type === "ent");
+    lblEl.textContent = LBL[type].libelle;
+    input.placeholder = LBL[type].ph;
+  }
+
+  // ---------- Formulaire d'ajout ----------
+  var addType = "dep", lastAdded = null;
+  function setAddType(t) {
+    addType = t;
+    applyType($("addSeg"), $("fCatField"), $("addRow"), $("fLibelleLbl"), $("fLibelle"), t);
+    $("addBtn").textContent = LBL[t].btn;
+    $("addBtn").className = "btn " + t;
+    renderSuggestions();
+  }
+  $("addSeg").querySelectorAll("button").forEach(function (b) { b.addEventListener("click", function () { setAddType(b.dataset.type); vibrate(8); }); });
+
+  function rememberCat(v) {
+    if (addType !== "dep") return;
+    v = v.trim().toLowerCase();
+    var prev = sorted(data.ops).find(function (o) { return o.type === "dep" && o.libelle.toLowerCase() === v; });
+    if (prev) fillCats($("fCat"), prev.cat);
+  }
+  $("fLibelle").addEventListener("change", function () { rememberCat(this.value); });
+
+  $("addForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var m = parseFloat($("fMontant").value);
+    var lib = $("fLibelle").value.trim();
+    var date = $("fDate").value;
+    if (!(m > 0)) { toast("Entre un montant plus grand que 0."); $("fMontant").focus(); return; }
+    if (!lib) { toast(addType === "dep" ? "Écris le produit ou la chose achetée." : "Écris d'où vient l'argent."); $("fLibelle").focus(); return; }
+    if (!date) { toast("Choisis une date."); return; }
+    var op = { id: uid(), type: addType, montant: m, libelle: lib, cat: addType === "dep" ? $("fCat").value : "", date: date, t: Date.now() };
+    data.ops.push(op);
+    if (save()) {
+      lastAdded = op.id;
+      vibrate(15);
+      toast((addType === "dep" ? "Dépense" : "Entrée") + " enregistrée : " + money(m));
+      $("fMontant").value = ""; $("fLibelle").value = "";
+      render();
+    }
+  });
+
+  // Raccourcis : derniers produits / sources utilisés
+  function renderSuggestions() {
+    var seen = {}, list = [];
+    sorted(data.ops).forEach(function (o) {
+      if (o.type !== addType) return;
+      var k = o.libelle.toLowerCase();
+      if (!seen[k] && list.length < 8) { seen[k] = 1; list.push(o.libelle); }
+    });
+    $("quick").innerHTML = list.map(function (l) { return '<button type="button" class="chip">' + esc(l) + "</button>"; }).join("");
+    $("quick").style.display = list.length ? "" : "none";
+    var all = {}, opts = "";
+    sorted(data.ops).forEach(function (o) { if (o.type !== addType) return; var k = o.libelle.toLowerCase(); if (!all[k]) { all[k] = 1; opts += '<option value="' + esc(o.libelle) + '">'; } });
+    $("libelles").innerHTML = opts;
+  }
+  $("quick").addEventListener("click", function (e) {
+    var c = e.target.closest(".chip"); if (!c) return;
+    $("fLibelle").value = c.textContent; rememberCat(c.textContent);
+    vibrate(6);
+    if (!$("fMontant").value) $("fMontant").focus();
+  });
+
+  // ---------- Tableaux ----------
+  var EMPTY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>';
+  function tableHtml(list, opts) {
+    if (!list.length) return '<tr><td class="empty">' + EMPTY_ICON + (opts.empty || "Aucune opération.") + "</td></tr>";
+    var h = '<thead><tr><th>' + (opts.groupByDay ? "Opération" : "Opération") + '</th><th class="num">Montant</th></tr></thead><tbody>';
+    var cur = null, byDay = {};
+    list.forEach(function (o) { (byDay[o.date] = byDay[o.date] || []).push(o); });
+    sorted(list).forEach(function (o) {
+      if (opts.groupByDay && o.date !== cur) {
+        cur = o.date;
+        var dDep = sum(byDay[cur], "dep"), dEnt = sum(byDay[cur], "ent");
+        h += '<tr class="day"><td>' + esc(dayLabel(cur)) + '</td><td class="num">' +
+          (dDep ? '<span class="out">− ' + esc(money(dDep)) + "</span>" : "") + (dEnt ? (dDep ? "<br>" : "") + '<span class="in">+ ' + esc(money(dEnt)) + "</span>" : "") + "</td></tr>";
+      }
+      var cls = o.type === "dep" ? "out" : "in";
+      var sub = o.type === "dep" ? o.cat : "Entrée d'argent";
+      h += '<tr class="item' + (o.id === lastAdded ? " flash" : "") + '" data-id="' + esc(o.id) + '" tabindex="0"><td><div class="who"><span class="dot ' + cls + '">' + (o.type === "dep" ? esc(initial(o.libelle)) : "+") + "</span><div>" + esc(o.libelle) + '<span class="cat">' + esc(sub) + '</span></div></div></td><td class="num ' + cls + '">' + (o.type === "dep" ? "− " : "+ ") + esc(money(o.montant)) + "</td></tr>";
+    });
+    var dep = sum(list, "dep"), ent = sum(list, "ent");
+    h += '<tr class="total"><td>Total dépensé</td><td class="num out">' + esc(money(dep)) + "</td></tr>";
+    if (ent) h += '<tr class="total"><td>Total entrées</td><td class="num in">' + esc(money(ent)) + "</td></tr>";
+    return h + "</tbody>";
+  }
+
+  function bars(entries, emptyMsg, green) {
+    if (!entries.length) return '<p class="hint">' + emptyMsg + "</p>";
+    var max = Math.max.apply(null, entries.map(function (e) { return e[1]; }));
+    return entries.map(function (e) {
+      return '<div class="bar-row"><span>' + esc(e[0]) + '</span><div class="bar' + (green ? " green" : "") + '"><i data-w="' + (max ? (e[1] / max * 100).toFixed(1) : 0) + '"></i></div><b>' + esc(money(e[1])) + "</b></div>";
+    }).join("");
+  }
+  function growBars() {
+    var els = document.querySelectorAll("#v-stats .bar i");
+    requestAnimationFrame(function () { requestAnimationFrame(function () { els.forEach(function (i) { i.style.width = i.dataset.w + "%"; }); }); });
+  }
+
+  function render() {
+    document.querySelectorAll(".devise").forEach(function (s) { s.textContent = data.devise; });
+    var today = todayStr(), mNow = monthOf(today);
+    var solde = data.capital + sum(data.ops, "ent") - sum(data.ops, "dep");
+    countTo($("solde"), solde);
+    $("solde").classList.toggle("neg", solde < 0);
+    countTo($("tToday"), sum(data.ops.filter(function (o) { return o.date === today; }), "dep"));
+    countTo($("tMonth"), sum(data.ops.filter(function (o) { return monthOf(o.date) === mNow; }), "dep"));
+
+    var todayOps = data.ops.filter(function (o) { return o.date === today; });
+    $("todayCount").textContent = todayOps.length ? todayOps.length + " opération" + (todayOps.length > 1 ? "s" : "") : "";
+    $("todayTable").innerHTML = tableHtml(todayOps, { empty: "Rien d'enregistré aujourd'hui." });
+
+    var m = $("fMonth").value || mNow;
+    $("tableTitle").textContent = "Tableau de " + monthLabel(m);
+    $("monthTable").innerHTML = tableHtml(data.ops.filter(function (o) { return monthOf(o.date) === m; }), { groupByDay: true, empty: "Aucune opération en " + monthLabel(m) + "." });
+
+    // Bilan
+    var sm = $("sMonth").value || mNow;
+    var ml = data.ops.filter(function (o) { return monthOf(o.date) === sm; });
+    var dep = sum(ml, "dep"), ent = sum(ml, "ent"), diff = ent - dep;
+    var days = {}; ml.forEach(function (o) { if (o.type === "dep") days[o.date] = (days[o.date] || 0) + o.montant; });
+    var nDays = Object.keys(days).length;
+    $("statKv").innerHTML =
+      '<div><span>Dépenses</span><b class="out">' + esc(money(dep)) + "</b></div>" +
+      '<div><span>Entrées d\'argent</span><b class="in">' + esc(money(ent)) + "</b></div>" +
+      '<div><span>Différence du mois</span><b class="' + (diff < 0 ? "out" : "in") + '">' + (diff < 0 ? "− " : "+ ") + esc(money(Math.abs(diff))) + "</b></div>" +
+      "<div><span>Moyenne par jour</span><b>" + esc(money(nDays ? Math.round(dep / nDays) : 0)) + "</b></div>";
+    var cats = {}; ml.forEach(function (o) { if (o.type === "dep") cats[o.cat] = (cats[o.cat] || 0) + o.montant; });
+    $("catBars").innerHTML = bars(Object.entries(cats).sort(function (a, b) { return b[1] - a[1]; }), "Aucune dépense ce mois-ci.");
+    $("dayBars").innerHTML = bars(Object.keys(days).sort().map(function (d) { return [(+d.slice(8)) + " " + MOIS[+d.slice(5, 7) - 1].slice(0, 4) + ".", days[d]]; }), "Aucune dépense ce mois-ci.");
+    var items = {}, src = {};
+    ml.forEach(function (o) { var k = o.libelle.trim(); if (o.type === "dep") items[k] = (items[k] || 0) + o.montant; else src[k] = (src[k] || 0) + o.montant; });
+    $("topItems").innerHTML = bars(Object.entries(items).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 8), "Aucune dépense ce mois-ci.");
+    $("srcBars").innerHTML = bars(Object.entries(src).sort(function (a, b) { return b[1] - a[1]; }), "Aucune entrée d'argent ce mois-ci.", true);
+    growBars();
+
+    renderSuggestions();
+    $("sCapital").value = data.capital || "";
+    $("sDevise").value = data.devise;
+    lastAdded = null;
+  }
+
+  // ---------- Navigation ----------
+  document.querySelectorAll("nav button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      if (b.classList.contains("active")) return;
+      vibrate(6);
+      document.querySelectorAll("nav button").forEach(function (x) { x.classList.toggle("active", x === b); });
+      document.querySelectorAll(".view").forEach(function (v) { v.classList.toggle("active", v.id === b.dataset.view); });
+      window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+      if (b.dataset.view === "v-stats") {
+        document.querySelectorAll("#v-stats .bar i").forEach(function (i) { i.style.width = "0"; });
+        growBars();
+      }
+    });
+  });
+  function monthNav(inputId, prev, next) {
+    $(inputId).addEventListener("change", render);
+    $(prev).addEventListener("click", function () { $(inputId).value = shiftMonth($(inputId).value || monthOf(todayStr()), -1); render(); });
+    $(next).addEventListener("click", function () { $(inputId).value = shiftMonth($(inputId).value || monthOf(todayStr()), 1); render(); });
+  }
+  monthNav("fMonth", "prevM", "nextM");
+  monthNav("sMonth", "prevS", "nextS");
+
+  // ---------- Modifier / supprimer ----------
+  var editing = null, editType = "dep";
+  function setEditType(t) {
+    editType = t;
+    applyType($("eSeg"), $("eCatField"), $("eRow"), $("eLibelleLbl"), $("eLibelle"), t);
+    fillCats($("eCat"), editing && editing.type === "dep" ? editing.cat : null);
+  }
+  $("eSeg").querySelectorAll("button").forEach(function (b) { b.addEventListener("click", function () { setEditType(b.dataset.type); }); });
+  function openEdit(id) {
+    editing = data.ops.find(function (o) { return o.id === id; });
+    if (!editing) return;
+    setEditType(editing.type);
+    $("eMontant").value = editing.montant;
+    $("eLibelle").value = editing.libelle;
+    $("eDate").value = editing.date;
+    $("editModal").classList.add("open");
+  }
+  function closeEdit() { $("editModal").classList.remove("open"); editing = null; }
+  document.addEventListener("click", function (e) { var tr = e.target.closest("tr.item"); if (tr) openEdit(tr.dataset.id); });
+  document.addEventListener("keydown", function (e) {
+    var tr = e.target.closest && e.target.closest("tr.item");
+    if (tr && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openEdit(tr.dataset.id); }
+    if (e.key === "Escape") { closeEdit(); $("confirmModal").classList.remove("open"); }
+  });
+  $("eCancel").addEventListener("click", closeEdit);
+  $("editModal").addEventListener("click", function (e) { if (e.target === this) closeEdit(); });
+  $("confirmModal").addEventListener("click", function (e) { if (e.target === this) this.classList.remove("open"); });
+  $("editForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var m = parseFloat($("eMontant").value), lib = $("eLibelle").value.trim();
+    if (!(m > 0) || !lib || !$("eDate").value) { toast("Vérifie le montant, le texte et la date."); return; }
+    editing.type = editType; editing.montant = m; editing.libelle = lib;
+    editing.cat = editType === "dep" ? $("eCat").value : "";
+    editing.date = $("eDate").value;
+    var id = editing.id;
+    if (save()) { lastAdded = id; toast("Modification enregistrée."); closeEdit(); render(); }
+  });
+
+  var onConfirm = null;
+  function confirmBox(text, yesLabel, fn) { $("confirmText").textContent = text; $("cYes").textContent = yesLabel; onConfirm = fn; $("confirmModal").classList.add("open"); }
+  $("cNo").addEventListener("click", function () { $("confirmModal").classList.remove("open"); });
+  $("cYes").addEventListener("click", function () { $("confirmModal").classList.remove("open"); if (onConfirm) onConfirm(); });
+  $("eDelete").addEventListener("click", function () {
+    var target = editing;
+    confirmBox("Supprimer « " + target.libelle + " » (" + money(target.montant) + ") ?", "Oui, supprimer", function () {
+      data.ops = data.ops.filter(function (o) { return o !== target; });
+      if (save()) { vibrate(20); toast("Opération supprimée."); closeEdit(); render(); }
+    });
+  });
+
+  // ---------- Réglages ----------
+  $("setForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    data.capital = parseFloat($("sCapital").value) || 0;
+    data.devise = $("sDevise").value.trim() || "FCFA";
+    shown = {};
+    if (save()) { toast("Réglages enregistrés."); render(); }
+  });
+  $("wipe").addEventListener("click", function () {
+    confirmBox("Effacer toutes les données de ce téléphone ? Fais d'abord une sauvegarde si tu veux les garder.", "Oui, tout effacer", function () {
+      data = { capital: 0, devise: "FCFA", ops: [] };
+      if (save()) { toast("Toutes les données ont été effacées."); render(); }
+    });
+  });
+
+  function download(name, content, mime) {
+    var blob = new Blob([content], { type: mime });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+  }
+  $("expJson").addEventListener("click", function () {
+    download("mon-capital-sauvegarde-" + todayStr() + ".json", JSON.stringify(data, null, 1), "application/json");
+    toast("Sauvegarde téléchargée.");
+  });
+  $("expCsv").addEventListener("click", function () {
+    var rows = [["Date", "Type", "Produit / Provenance", "Catégorie", "Montant (" + data.devise + ")"]];
+    sorted(data.ops).reverse().forEach(function (o) { rows.push([o.date, o.type === "dep" ? "Dépense" : "Entrée", o.libelle, o.cat, String(o.montant).replace(".", ",")]); });
+    var csv = "﻿" + rows.map(function (r) { return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(";"); }).join("\r\n");
+    download("mon-capital-" + todayStr() + ".csv", csv, "text/csv;charset=utf-8");
+    toast("Fichier Excel (CSV) téléchargé.");
+  });
+  $("impJson").addEventListener("click", function () { $("impFile").click(); });
+  $("impFile").addEventListener("change", function () {
+    var f = this.files[0]; if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      try {
+        var d = JSON.parse(r.result);
+        if (!d || !Array.isArray(d.ops)) throw new Error();
+        var nd = normalise(d);
+        confirmBox("Remplacer les données actuelles par cette sauvegarde (" + nd.ops.length + " opérations) ?", "Oui, restaurer", function () {
+          data = nd; shown = {}; if (save()) { toast("Sauvegarde restaurée."); render(); }
+        });
+      } catch (e) { toast("Ce fichier n'est pas une sauvegarde Mon Capital valide."); }
+    };
+    r.readAsText(f);
+    this.value = "";
+  });
+
+  // ---------- Démarrage ----------
+  var autoDate = todayStr();
+  $("fDate").value = autoDate;
+  $("fMonth").value = monthOf(todayStr());
+  $("sMonth").value = monthOf(todayStr());
+  fillCats($("fCat"));
+  setAddType("dep");
+  render();
+  // ---------- Installation (PWA) ----------
+  if ("serviceWorker" in navigator && location.protocol === "https:") {
+    window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+  }
+  var installEvt = null;
+  window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); installEvt = e; $("installBtn").classList.add("show"); });
+  $("installBtn").addEventListener("click", function () {
+    if (!installEvt) return;
+    installEvt.prompt();
+    installEvt.userChoice.then(function (r) { if (r.outcome === "accepted") $("installBtn").classList.remove("show"); installEvt = null; });
+  });
+  window.addEventListener("appinstalled", function () { $("installBtn").classList.remove("show"); toast("Application installée !"); });
+
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) { if ($("fDate").value === autoDate && autoDate !== todayStr()) { autoDate = todayStr(); $("fDate").value = autoDate; } render(); }
+  });
+})();
+</script>
+</body>
+</html>
