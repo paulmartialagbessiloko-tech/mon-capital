@@ -27,6 +27,8 @@
   --out-soft: #fbe9e7;
   --in: #1b7a3d;
   --in-soft: #e3f4e8;
+  --warn: #a35f00;
+  --warn-soft: #fdf0dc;
   --shadow: 0 1px 2px rgba(10, 40, 30, .06), 0 6px 18px rgba(10, 40, 30, .07);
   --radius: 16px;
   --ease: cubic-bezier(.2, .8, .2, 1);
@@ -49,6 +51,8 @@
     --out-soft: #3a1f1d;
     --in: #7ddc95;
     --in-soft: #1a3322;
+    --warn: #ffb74d;
+    --warn-soft: #3a2c14;
     --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 22px rgba(0, 0, 0, .25);
     color-scheme: dark;
   }
@@ -194,15 +198,41 @@ tr.total:first-of-type td { border-top: 2px solid var(--ink); }
 .kv b { font-size: 17px; font-variant-numeric: tabular-nums; }
 .hint { font-size: 13px; color: var(--muted); margin: 0; }
 
+/* ---------- À payer : dettes et dépenses prévues ---------- */
+.seg.neutral::before, .seg.neutral.ent::before { background: var(--accent-2); box-shadow: 0 3px 10px color-mix(in srgb, var(--accent-2) 35%, transparent); }
+.plist { display: grid; gap: 10px; }
+.pitem { border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: grid; gap: 10px; background: var(--surface); animation: viewIn .3s var(--ease); }
+.pitem.late { border-color: color-mix(in srgb, var(--out) 45%, var(--line)); box-shadow: inset 4px 0 0 var(--out); }
+.pitem.soon { box-shadow: inset 4px 0 0 var(--warn); }
+.ptop { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+.ptop .num { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pname { font-weight: 600; overflow-wrap: anywhere; }
+.pill { display: inline-block; font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 20px; margin-top: 4px; }
+.pill.late { background: var(--out-soft); color: var(--out); }
+.pill.soon { background: var(--warn-soft); color: var(--warn); }
+.pill.ok { background: var(--in-soft); color: var(--in); }
+.progress { display: grid; gap: 4px; }
+.progress .bar i { transition: width .7s var(--ease); }
+.pact { display: flex; gap: 8px; }
+.btn.small { padding: 10px 12px; font-size: 14px; flex: 1; border-radius: 10px; }
+.check { display: flex; align-items: center; gap: 10px; color: var(--ink); font-size: 14px; font-weight: 400; cursor: pointer; }
+.check input { width: 22px; height: 22px; flex: 0 0 22px; padding: 0; accent-color: var(--accent-2); }
+details.done summary { cursor: pointer; color: var(--muted); font-size: 14px; padding: 4px 0; }
+details.done .pitem { opacity: .7; }
+.owe { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.owe button { border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.1); color: #fff; font: inherit; font-size: 12.5px; padding: 6px 11px; border-radius: 20px; cursor: pointer; font-variant-numeric: tabular-nums; transition: transform .12s, background .2s; }
+.owe button:active { transform: scale(.95); background: rgba(255,255,255,.2); }
+.owe button.warn { border-color: rgba(255,180,171,.5); }
+
 /* ---------- Navigation ---------- */
 nav {
   position: fixed; left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 5;
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(5, 1fr);
   background: color-mix(in srgb, var(--surface) 88%, transparent); backdrop-filter: blur(14px);
   border: 1px solid var(--line); border-radius: 20px; padding: 6px; box-shadow: 0 10px 30px rgba(0,0,0,.14);
   max-width: 560px; margin: 0 auto;
 }
-nav button { position: relative; border: 0; background: none; color: var(--muted); font: inherit; font-size: 11.5px; padding: 7px 4px 8px; display: grid; justify-items: center; gap: 2px; cursor: pointer; border-radius: 14px; transition: color .25s, background .25s, transform .12s; }
+nav button { position: relative; border: 0; background: none; color: var(--muted); font: inherit; font-size: 11px; padding: 7px 2px 8px; white-space: nowrap; display: grid; justify-items: center; gap: 2px; cursor: pointer; border-radius: 14px; transition: color .25s, background .25s, transform .12s; }
 nav button:active { transform: scale(.92); }
 nav button svg { width: 23px; height: 23px; transition: transform .3s var(--ease); }
 nav button.active { color: var(--accent-2); background: var(--accent-soft); font-weight: 600; }
@@ -237,6 +267,7 @@ nav button.active svg { transform: translateY(-1px) scale(1.08); }
     <div class="tile"><span>Dépensé aujourd'hui</span><b id="tToday">0</b></div>
     <div class="tile"><span>Dépensé ce mois</span><b id="tMonth">0</b></div>
   </div>
+  <div class="owe" id="oweLine"></div>
   <button type="button" class="install-btn" id="installBtn">Installer l'application sur mon téléphone</button>
 </header>
 
@@ -250,7 +281,7 @@ nav button.active svg { transform: translateY(-1px) scale(1.08); }
           <button type="button" data-type="dep" class="on">Dépense</button>
           <button type="button" data-type="ent">Entrée d'argent</button>
         </div>
-        <label for="fMontant">Montant (<span class="devise">FCFA</span>)
+        <label for="fMontant"><span>Montant (<span class="devise">FCFA</span>)</span>
           <input id="fMontant" type="number" inputmode="decimal" min="0" step="any" placeholder="0" required>
         </label>
         <label for="fLibelle"><span id="fLibelleLbl">Produit ou chose achetée</span>
@@ -322,12 +353,84 @@ nav button.active svg { transform: translateY(-1px) scale(1.08); }
     </div>
   </section>
 
+  <!-- À PAYER : dettes + dépenses à faire -->
+  <section class="view" id="v-plan">
+    <div class="card">
+      <div class="seg neutral" id="planSeg" role="group" aria-label="Partie affichée">
+        <button type="button" data-type="det" class="on">Ce que je dois</button>
+        <button type="button" data-type="pre">Dépenses à faire</button>
+      </div>
+    </div>
+
+    <div id="planDet" style="display:grid;gap:16px">
+      <div class="card">
+        <h2>Mes dettes</h2>
+        <div class="kv" id="detKv"></div>
+      </div>
+      <div class="card">
+        <h2>Ajouter une dette</h2>
+        <form id="detForm" autocomplete="off">
+          <label for="dNom">À qui je dois ?
+            <input id="dNom" type="text" list="noms" placeholder="Ex : Tante Afi" required>
+            <datalist id="noms"></datalist>
+          </label>
+          <label for="dMontant"><span>Montant dû (<span class="devise">FCFA</span>)</span>
+            <input id="dMontant" type="number" inputmode="decimal" min="0" step="any" placeholder="0" required>
+          </label>
+          <div class="row2">
+            <label for="dMotif">Pour quoi ? (facultatif)
+              <input id="dMotif" type="text" placeholder="Ex : prêt, marchandise à crédit">
+            </label>
+            <label for="dEch">À rendre avant (facultatif)
+              <input id="dEch" type="date">
+            </label>
+          </div>
+          <label class="check" for="dRecu"><input id="dRecu" type="checkbox"> J'ai reçu cet argent en main : l'ajouter à mon capital</label>
+          <button class="btn" type="submit">Enregistrer la dette</button>
+        </form>
+      </div>
+      <div class="card">
+        <h2>À rembourser <small id="detCount"></small></h2>
+        <div class="plist" id="detList"></div>
+        <details class="done" id="detDoneWrap" style="margin-top:12px"><summary id="detDoneSum">Dettes réglées</summary><div class="plist" id="detDone" style="margin-top:10px"></div></details>
+      </div>
+    </div>
+
+    <div id="planPre" style="display:none;gap:16px">
+      <div class="card">
+        <h2>Dépenses à faire</h2>
+        <div class="kv" id="preKv"></div>
+      </div>
+      <div class="card">
+        <h2>Ajouter une dépense à faire</h2>
+        <form id="preForm" autocomplete="off">
+          <label for="pLibelle">Quoi acheter ou payer ?
+            <input id="pLibelle" type="text" placeholder="Ex : Loyer de décembre" required>
+          </label>
+          <label for="pMontant"><span>Montant prévu (<span class="devise">FCFA</span>)</span>
+            <input id="pMontant" type="number" inputmode="decimal" min="0" step="any" placeholder="0" required>
+          </label>
+          <div class="row2">
+            <label for="pCat">Catégorie <select id="pCat"></select></label>
+            <label for="pDate">Pour quand ? (facultatif) <input id="pDate" type="date"></label>
+          </div>
+          <button class="btn" type="submit">Ajouter à la liste</button>
+        </form>
+      </div>
+      <div class="card">
+        <h2>Ma liste <small id="preCount"></small></h2>
+        <p class="hint" style="margin-bottom:10px">Touche « C'est fait » quand tu as payé : la dépense est notée dans ton tableau.</p>
+        <div class="plist" id="preList"></div>
+      </div>
+    </div>
+  </section>
+
   <!-- RÉGLAGES -->
   <section class="view" id="v-settings">
     <div class="card">
       <h2>Mon capital de départ</h2>
       <form id="setForm">
-        <label for="sCapital">Capital de départ (<span class="devise">FCFA</span>)
+        <label for="sCapital"><span>Capital de départ (<span class="devise">FCFA</span>)</span>
           <input id="sCapital" type="number" inputmode="decimal" step="any" placeholder="Ex : 500000">
         </label>
         <label for="sDevise">Monnaie affichée
@@ -362,6 +465,8 @@ nav button.active svg { transform: translateY(-1px) scale(1.08); }
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 14h18M9 9v11"/></svg>Tableau</button>
   <button type="button" data-view="v-stats">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>Bilan</button>
+  <button type="button" data-view="v-plan">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>À payer</button>
   <button type="button" data-view="v-settings">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>Réglages</button>
 </nav>
@@ -388,6 +493,11 @@ nav button.active svg { transform: translateY(-1px) scale(1.08); }
   </form>
 </div>
 
+<!-- Fenêtre dettes / dépenses à faire -->
+<div class="modal" id="pModal" role="dialog" aria-modal="true" aria-labelledby="pTitle">
+  <form class="sheet" id="pForm" autocomplete="off"></form>
+</div>
+
 <!-- Fenêtre confirmer -->
 <div class="modal" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmText">
   <div class="sheet">
@@ -405,7 +515,7 @@ nav button.active svg { transform: translateY(-1px) scale(1.08); }
 (function () {
   "use strict";
   var KEY = "monCapital.v1";
-  var CATS_DEP = ["Nourriture", "Transport", "Marchandise / Stock", "Loyer", "Électricité / Eau", "Téléphone / Internet", "Santé", "Famille", "Vêtements", "Loisirs", "Autre"];
+  var CATS_DEP = ["Nourriture", "Transport", "Marchandise / Stock", "Loyer", "Électricité / Eau", "Téléphone / Internet", "Santé", "Famille", "Vêtements", "Loisirs", "Remboursement de dette", "Autre"];
   var LBL = {
     dep: { libelle: "Produit ou chose achetée", ph: "Ex : Riz 5 kg", btn: "Enregistrer la dépense" },
     ent: { libelle: "D'où vient l'argent ?", ph: "Ex : Papa, tontine, client Koffi…", btn: "Enregistrer l'entrée" }
@@ -422,8 +532,11 @@ nav button.active svg { transform: translateY(-1px) scale(1.08); }
         if (d && Array.isArray(d.ops)) return normalise(d);
       }
     } catch (e) {}
-    return { capital: 0, devise: "FCFA", ops: [] };
+    return emptyData();
   }
+  function emptyData() { return { capital: 0, devise: "FCFA", ops: [], dettes: [], prevues: [] }; }
+  function str(v) { return v == null ? "" : String(v); }
+  function dateOrEmpty(v) { return /^\d{4}-\d{2}-\d{2}/.test(str(v)) ? str(v).slice(0, 10) : ""; }
   function normalise(d) {
     return {
       capital: Number(d.capital) || 0,
@@ -431,6 +544,16 @@ nav button.active svg { transform: translateY(-1px) scale(1.08); }
       ops: d.ops.filter(function (o) { return o && o.date && isFinite(o.montant); }).map(function (o) {
         var type = o.type === "ent" ? "ent" : "dep";
         return { id: String(o.id || uid()), type: type, montant: Math.abs(Number(o.montant)), libelle: String(o.libelle || ""), cat: type === "ent" ? "" : String(o.cat || "Autre"), date: String(o.date).slice(0, 10), t: Number(o.t) || Date.now() };
+      }),
+      dettes: (Array.isArray(d.dettes) ? d.dettes : []).filter(function (x) { return x && isFinite(x.montant); }).map(function (x) {
+        return {
+          id: str(x.id) || uid(), nom: str(x.nom), montant: Math.abs(Number(x.montant)), motif: str(x.motif),
+          echeance: dateOrEmpty(x.echeance), t: Number(x.t) || Date.now(), regle: dateOrEmpty(x.regle),
+          paiements: (Array.isArray(x.paiements) ? x.paiements : []).filter(function (p) { return p && isFinite(p.montant); }).map(function (p) { return { montant: Math.abs(Number(p.montant)), date: dateOrEmpty(p.date) }; })
+        };
+      }),
+      prevues: (Array.isArray(d.prevues) ? d.prevues : []).filter(function (x) { return x && isFinite(x.montant); }).map(function (x) {
+        return { id: str(x.id) || uid(), libelle: str(x.libelle), montant: Math.abs(Number(x.montant)), cat: str(x.cat) || "Autre", date: dateOrEmpty(x.date), t: Number(x.t) || Date.now() };
       })
     };
   }
@@ -445,6 +568,7 @@ nav button.active svg { transform: translateY(-1px) scale(1.08); }
   var nf = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 });
   function money(n) { return nf.format(n) + " " + data.devise; }
   function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function localDate(t) { var d = new Date(t); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
   function todayStr() { var d = new Date(); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
   function monthOf(s) { return s.slice(0, 7); }
   function shiftMonth(m, delta) { var d = new Date(+m.slice(0, 4), +m.slice(5, 7) - 1 + delta, 1); return d.getFullYear() + "-" + pad(d.getMonth() + 1); }
@@ -633,23 +757,27 @@ nav button.active svg { transform: translateY(-1px) scale(1.08); }
     growBars();
 
     renderSuggestions();
+    renderPlan(solde);
     $("sCapital").value = data.capital || "";
     $("sDevise").value = data.devise;
     lastAdded = null;
   }
 
   // ---------- Navigation ----------
+  function showView(id) {
+    document.querySelectorAll("nav button").forEach(function (x) { x.classList.toggle("active", x.dataset.view === id); });
+    document.querySelectorAll(".view").forEach(function (v) { v.classList.toggle("active", v.id === id); });
+    window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+    if (id === "v-stats") {
+      document.querySelectorAll("#v-stats .bar i").forEach(function (i) { i.style.width = "0"; });
+      growBars();
+    }
+  }
   document.querySelectorAll("nav button").forEach(function (b) {
     b.addEventListener("click", function () {
       if (b.classList.contains("active")) return;
       vibrate(6);
-      document.querySelectorAll("nav button").forEach(function (x) { x.classList.toggle("active", x === b); });
-      document.querySelectorAll(".view").forEach(function (v) { v.classList.toggle("active", v.id === b.dataset.view); });
-      window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
-      if (b.dataset.view === "v-stats") {
-        document.querySelectorAll("#v-stats .bar i").forEach(function (i) { i.style.width = "0"; });
-        growBars();
-      }
+      showView(b.dataset.view);
     });
   });
   function monthNav(inputId, prev, next) {
@@ -682,7 +810,7 @@ nav button.active svg { transform: translateY(-1px) scale(1.08); }
   document.addEventListener("keydown", function (e) {
     var tr = e.target.closest && e.target.closest("tr.item");
     if (tr && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openEdit(tr.dataset.id); }
-    if (e.key === "Escape") { closeEdit(); $("confirmModal").classList.remove("open"); }
+    if (e.key === "Escape") { closeEdit(); closeP(); $("confirmModal").classList.remove("open"); }
   });
   $("eCancel").addEventListener("click", closeEdit);
   $("editModal").addEventListener("click", function (e) { if (e.target === this) closeEdit(); });
@@ -710,6 +838,236 @@ nav button.active svg { transform: translateY(-1px) scale(1.08); }
     });
   });
 
+  // ---------- À payer : dettes et dépenses à faire ----------
+  function reste(d) { return Math.max(0, Math.round((d.montant - d.paiements.reduce(function (a, p) { return a + p.montant; }, 0)) * 100) / 100); }
+  function dateLong(ds) { var p = ds.split("-"); return (+p[2]) + " " + MOIS[+p[1] - 1] + (p[0] !== todayStr().slice(0, 4) ? " " + p[0] : ""); }
+  function daysUntil(ds) { var a = ds.split("-"), b = todayStr().split("-"); return Math.round((new Date(+a[0], +a[1] - 1, +a[2]) - new Date(+b[0], +b[1] - 1, +b[2])) / 86400000); }
+  // Retourne [classe, texte] selon la date limite
+  function urgency(ds, word) {
+    if (!ds) return ["", ""];
+    var n = daysUntil(ds);
+    if (n < 0) return ["late", "En retard de " + (-n) + " jour" + (n < -1 ? "s" : "")];
+    if (n === 0) return ["soon", "C'est aujourd'hui"];
+    if (n <= 3) return ["soon", "Dans " + n + " jour" + (n > 1 ? "s" : "")];
+    return ["", word + " " + dateLong(ds)];
+  }
+  function byDue(a, b) {
+    if (a.echeance !== b.echeance) { if (!a.echeance) return 1; if (!b.echeance) return -1; return a.echeance < b.echeance ? -1 : 1; }
+    return a.t - b.t;
+  }
+  function activeDettes() { return data.dettes.filter(function (d) { return !d.regle; }).sort(byDue); }
+  function totalDu() { return activeDettes().reduce(function (a, d) { return a + reste(d); }, 0); }
+  function totalPrevu() { return data.prevues.reduce(function (a, p) { return a + p.montant; }, 0); }
+
+  function detHtml(d) {
+    var r = reste(d), paid = d.montant - r, u = d.regle ? ["", ""] : urgency(d.echeance, "À rendre avant le");
+    var sub = [d.motif, "depuis le " + dateLong(localDate(d.t))].filter(Boolean).join(" · ");
+    var h = '<div class="pitem ' + u[0] + '" data-kind="det" data-id="' + esc(d.id) + '">' +
+      '<div class="ptop"><div class="who"><span class="dot out">' + esc(initial(d.nom)) + '</span><div><div class="pname">' + esc(d.nom) + '</div><span class="cat">' + esc(sub) + "</span>" +
+      (d.regle ? '<span class="pill ok">Réglée le ' + esc(dateLong(d.regle)) + "</span>" : u[1] ? '<span class="pill ' + (u[0] || "ok") + '">' + esc(u[1]) + "</span>" : "") +
+      '</div></div><div class="num ' + (d.regle ? "in" : "out") + '">' + esc(money(d.regle ? d.montant : r)) + '<span class="cat">' + (d.regle ? "payé" : "reste à payer") + "</span></div></div>";
+    if (!d.regle && paid > 0) {
+      h += '<div class="progress"><div class="bar green"><i style="width:' + (paid / d.montant * 100).toFixed(1) + '%"></i></div><span class="cat">Déjà remboursé ' + esc(money(paid)) + " sur " + esc(money(d.montant)) + "</span></div>";
+    }
+    h += '<div class="pact">' + (d.regle ? "" : '<button type="button" class="btn ent small" data-act="pay">Rembourser</button>') + '<button type="button" class="btn ghost small" data-act="edit">Modifier</button></div></div>';
+    return h;
+  }
+  function preHtml(p) {
+    var u = urgency(p.date, "Prévu pour le");
+    return '<div class="pitem ' + u[0] + '" data-kind="pre" data-id="' + esc(p.id) + '">' +
+      '<div class="ptop"><div class="who"><span class="dot out">' + esc(initial(p.libelle)) + '</span><div><div class="pname">' + esc(p.libelle) + '</div><span class="cat">' + esc(p.cat) + "</span>" +
+      (u[1] ? '<span class="pill ' + (u[0] || "ok") + '">' + esc(u[1]) + "</span>" : "") +
+      '</div></div><div class="num out">' + esc(money(p.montant)) + "</div></div>" +
+      '<div class="pact"><button type="button" class="btn ent small" data-act="done">C\'est fait</button><button type="button" class="btn ghost small" data-act="edit">Modifier</button></div></div>';
+  }
+  function kv(pairs) { return pairs.map(function (p) { return "<div><span>" + esc(p[0]) + '</span><b class="' + (p[2] || "") + '">' + esc(p[1]) + "</b></div>"; }).join(""); }
+
+  function renderPlan(solde) {
+    var act = activeDettes(), du = totalDu(), prevu = totalPrevu();
+    var late = act.filter(function (d) { return d.echeance && daysUntil(d.echeance) < 0; }).length;
+    $("detKv").innerHTML = kv([
+      ["Total que je dois", money(du), du ? "out" : ""],
+      ["Capital après dettes", money(solde - du), solde - du < 0 ? "out" : "in"],
+      ["Personnes", String(new Set(act.map(function (d) { return d.nom.trim().toLowerCase(); })).size)],
+      ["En retard", String(late), late ? "out" : ""]
+    ]);
+    $("detCount").textContent = act.length ? act.length + " dette" + (act.length > 1 ? "s" : "") : "";
+    $("detList").innerHTML = act.length ? act.map(detHtml).join("") : '<p class="empty">' + EMPTY_ICON + "Tu ne dois rien à personne.</p>";
+    var done = data.dettes.filter(function (d) { return d.regle; }).sort(function (a, b) { return a.regle < b.regle ? 1 : -1; });
+    $("detDoneWrap").style.display = done.length ? "" : "none";
+    $("detDoneSum").textContent = "Dettes réglées (" + done.length + ")";
+    $("detDone").innerHTML = done.map(detHtml).join("");
+
+    var pre = data.prevues.slice().sort(function (a, b) { return byDue({ echeance: a.date, t: a.t }, { echeance: b.date, t: b.t }); });
+    $("preKv").innerHTML = kv([
+      ["Total à dépenser", money(prevu), prevu ? "out" : ""],
+      ["Capital après ces dépenses", money(solde - prevu), solde - prevu < 0 ? "out" : "in"],
+      ["Capital après dettes et dépenses", money(solde - du - prevu), solde - du - prevu < 0 ? "out" : "in"],
+      ["Nombre", String(pre.length)]
+    ]);
+    $("preCount").textContent = pre.length ? pre.length + " à faire" : "";
+    $("preList").innerHTML = pre.length ? pre.map(preHtml).join("") : '<p class="empty">' + EMPTY_ICON + "Aucune dépense prévue.</p>";
+
+    var names = {}, opts = "";
+    data.dettes.forEach(function (d) { var k = d.nom.toLowerCase(); if (!names[k]) { names[k] = 1; opts += '<option value="' + esc(d.nom) + '">'; } });
+    $("noms").innerHTML = opts;
+
+    // Rappel en haut de l'écran
+    var chips = "";
+    if (du) chips += '<button type="button" data-go="det" class="' + (late ? "warn" : "") + '">Je dois ' + esc(money(du)) + (late ? " · " + late + " en retard" : "") + "</button>";
+    if (prevu) chips += '<button type="button" data-go="pre">À dépenser ' + esc(money(prevu)) + "</button>";
+    $("oweLine").innerHTML = chips;
+    $("oweLine").style.display = chips ? "" : "none";
+  }
+
+  var planPart = "det";
+  function setPlanPart(t) {
+    planPart = t;
+    $("planSeg").classList.toggle("ent", t === "pre");
+    $("planSeg").querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b.dataset.type === t); });
+    $("planDet").style.display = t === "det" ? "grid" : "none";
+    $("planPre").style.display = t === "pre" ? "grid" : "none";
+  }
+  $("planSeg").querySelectorAll("button").forEach(function (b) { b.addEventListener("click", function () { setPlanPart(b.dataset.type); vibrate(6); }); });
+  $("oweLine").addEventListener("click", function (e) { var b = e.target.closest("button[data-go]"); if (!b) return; setPlanPart(b.dataset.go); showView("v-plan"); });
+
+  $("detForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var nom = $("dNom").value.trim(), m = parseFloat($("dMontant").value);
+    if (!nom) { toast("Écris le nom de la personne."); return; }
+    if (!(m > 0)) { toast("Entre un montant plus grand que 0."); return; }
+    var d = { id: uid(), nom: nom, montant: m, motif: $("dMotif").value.trim(), echeance: $("dEch").value, t: Date.now(), regle: "", paiements: [] };
+    data.dettes.push(d);
+    if ($("dRecu").checked) data.ops.push({ id: uid(), type: "ent", montant: m, libelle: "Prêt de " + nom, cat: "", date: todayStr(), t: Date.now() });
+    if (save()) {
+      vibrate(15); toast("Dette envers " + nom + " enregistrée : " + money(m));
+      this.reset(); render();
+    }
+  });
+  $("preForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var lib = $("pLibelle").value.trim(), m = parseFloat($("pMontant").value);
+    if (!lib) { toast("Écris ce qu'il faut acheter ou payer."); return; }
+    if (!(m > 0)) { toast("Entre un montant plus grand que 0."); return; }
+    data.prevues.push({ id: uid(), libelle: lib, montant: m, cat: $("pCat").value, date: $("pDate").value, t: Date.now() });
+    if (save()) {
+      vibrate(15); toast("Ajouté à la liste : " + lib);
+      this.reset(); fillCats($("pCat")); render();
+    }
+  });
+
+  // Fenêtre commune pour rembourser / modifier / marquer comme fait
+  var pSubmit = null;
+  function openP(html, onSubmit) { $("pForm").innerHTML = html; pSubmit = onSubmit; $("pModal").classList.add("open"); }
+  function closeP() { $("pModal").classList.remove("open"); pSubmit = null; }
+  $("pModal").addEventListener("click", function (e) { if (e.target === this) closeP(); });
+  $("pForm").addEventListener("submit", function (e) { e.preventDefault(); if (pSubmit) pSubmit(); });
+  $("pForm").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-p]"); if (!b) return;
+    if (b.dataset.p === "cancel") closeP();
+    if (b.dataset.p === "delete" && pDelete) pDelete();
+  });
+  var pDelete = null;
+  function field(id, label, type, value, extra) {
+    return '<label for="' + id + '">' + label + ' <input id="' + id + '" type="' + type + '" value="' + esc(value == null ? "" : value) + '" ' + (extra || "") + "></label>";
+  }
+  var BTN_CANCEL = '<button class="btn ghost" type="button" data-p="cancel">Annuler</button>';
+
+  function payDette(d) {
+    var r = reste(d);
+    pDelete = null;
+    openP('<h2 id="pTitle">Rembourser ' + esc(d.nom) + "</h2>" +
+      '<p class="hint">Il reste ' + esc(money(r)) + " à payer sur " + esc(money(d.montant)) + ".</p>" +
+      field("xMontant", "Montant remboursé maintenant", "number", r, 'inputmode="decimal" min="0" step="any" required') +
+      field("xDate", "Date", "date", todayStr(), "required") +
+      '<label class="check" for="xDep"><input id="xDep" type="checkbox" checked> Retirer ce montant de mon capital (le noter comme dépense)</label>' +
+      '<button class="btn ent" type="submit">Valider le remboursement</button>' + BTN_CANCEL,
+      function () {
+        var m = parseFloat($("xMontant").value), date = $("xDate").value;
+        if (!(m > 0)) { toast("Entre un montant plus grand que 0."); return; }
+        if (m > r) { toast("C'est plus que ce que tu dois (" + money(r) + ")."); return; }
+        if (!date) { toast("Choisis une date."); return; }
+        d.paiements.push({ montant: m, date: date });
+        if ($("xDep").checked) data.ops.push({ id: uid(), type: "dep", montant: m, libelle: "Remboursement à " + d.nom, cat: "Remboursement de dette", date: date, t: Date.now() });
+        var fini = reste(d) <= 0;
+        if (fini) d.regle = date;
+        if (save()) { vibrate(20); toast(fini ? "Bravo ! Dette envers " + d.nom + " réglée." : "Remboursement noté. Il reste " + money(reste(d)) + "."); closeP(); render(); }
+      });
+  }
+  function editDette(d) {
+    pDelete = function () {
+      confirmBox("Supprimer la dette envers « " + d.nom + " » ? Les dépenses déjà notées dans le tableau restent.", "Oui, supprimer", function () {
+        data.dettes = data.dettes.filter(function (x) { return x !== d; });
+        if (save()) { toast("Dette supprimée."); closeP(); render(); }
+      });
+    };
+    var paid = d.montant - reste(d);
+    openP('<h2 id="pTitle">Modifier la dette</h2>' +
+      field("xNom", "À qui je dois ?", "text", d.nom, "required") +
+      field("xMontant", "Montant total dû", "number", d.montant, 'inputmode="decimal" min="0" step="any" required') +
+      '<div class="row2">' + field("xMotif", "Pour quoi ?", "text", d.motif) + field("xEch", "À rendre avant", "date", d.echeance) + "</div>" +
+      (paid > 0 ? '<p class="hint">Déjà remboursé : ' + esc(money(paid)) + ".</p>" : "") +
+      '<div class="actions"><button class="btn" type="submit">Enregistrer</button><button class="btn danger" type="button" data-p="delete">Supprimer</button></div>' + BTN_CANCEL,
+      function () {
+        var nom = $("xNom").value.trim(), m = parseFloat($("xMontant").value);
+        if (!nom || !(m > 0)) { toast("Vérifie le nom et le montant."); return; }
+        if (m < paid) { toast("Le montant ne peut pas être plus petit que ce qui est déjà remboursé (" + money(paid) + ")."); return; }
+        d.nom = nom; d.montant = m; d.motif = $("xMotif").value.trim(); d.echeance = $("xEch").value;
+        d.regle = reste(d) <= 0 ? (d.regle || todayStr()) : "";
+        if (save()) { toast("Dette modifiée."); closeP(); render(); }
+      });
+  }
+  function catSelect(id, current) {
+    var cats = CATS_DEP.indexOf(current) < 0 && current ? CATS_DEP.concat([current]) : CATS_DEP;
+    return '<label for="' + id + '">Catégorie <select id="' + id + '">' + cats.map(function (c) { return "<option" + (c === current ? " selected" : "") + ">" + esc(c) + "</option>"; }).join("") + "</select></label>";
+  }
+  function donePrevue(p) {
+    pDelete = null;
+    openP('<h2 id="pTitle">' + esc(p.libelle) + " : c'est fait</h2>" +
+      '<p class="hint">La dépense sera notée dans ton tableau et retirée de ton capital.</p>' +
+      field("xMontant", "Montant payé vraiment", "number", p.montant, 'inputmode="decimal" min="0" step="any" required') +
+      field("xDate", "Date", "date", todayStr(), "required") +
+      '<button class="btn ent" type="submit">Noter la dépense</button>' + BTN_CANCEL,
+      function () {
+        var m = parseFloat($("xMontant").value), date = $("xDate").value;
+        if (!(m > 0) || !date) { toast("Vérifie le montant et la date."); return; }
+        var op = { id: uid(), type: "dep", montant: m, libelle: p.libelle, cat: p.cat, date: date, t: Date.now() };
+        data.ops.push(op);
+        data.prevues = data.prevues.filter(function (x) { return x !== p; });
+        if (save()) { lastAdded = op.id; vibrate(20); toast("Dépense notée : " + money(m)); closeP(); render(); }
+      });
+  }
+  function editPrevue(p) {
+    pDelete = function () {
+      confirmBox("Retirer « " + p.libelle + " » de la liste ?", "Oui, retirer", function () {
+        data.prevues = data.prevues.filter(function (x) { return x !== p; });
+        if (save()) { toast("Retiré de la liste."); closeP(); render(); }
+      });
+    };
+    openP('<h2 id="pTitle">Modifier la dépense à faire</h2>' +
+      field("xLib", "Quoi acheter ou payer ?", "text", p.libelle, "required") +
+      field("xMontant", "Montant prévu", "number", p.montant, 'inputmode="decimal" min="0" step="any" required') +
+      '<div class="row2">' + catSelect("xCat", p.cat) + field("xDate", "Pour quand ?", "date", p.date) + "</div>" +
+      '<div class="actions"><button class="btn" type="submit">Enregistrer</button><button class="btn danger" type="button" data-p="delete">Supprimer</button></div>' + BTN_CANCEL,
+      function () {
+        var lib = $("xLib").value.trim(), m = parseFloat($("xMontant").value);
+        if (!lib || !(m > 0)) { toast("Vérifie le texte et le montant."); return; }
+        p.libelle = lib; p.montant = m; p.cat = $("xCat").value; p.date = $("xDate").value;
+        if (save()) { toast("Modification enregistrée."); closeP(); render(); }
+      });
+  }
+  $("v-plan").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-act]"); if (!b) return;
+    var it = b.closest(".pitem"), id = it.dataset.id;
+    if (it.dataset.kind === "det") {
+      var d = data.dettes.find(function (x) { return x.id === id; }); if (!d) return;
+      if (b.dataset.act === "pay") payDette(d); else editDette(d);
+    } else {
+      var p = data.prevues.find(function (x) { return x.id === id; }); if (!p) return;
+      if (b.dataset.act === "done") donePrevue(p); else editPrevue(p);
+    }
+  });
+
   // ---------- Réglages ----------
   $("setForm").addEventListener("submit", function (e) {
     e.preventDefault();
@@ -720,7 +1078,7 @@ nav button.active svg { transform: translateY(-1px) scale(1.08); }
   });
   $("wipe").addEventListener("click", function () {
     confirmBox("Effacer toutes les données de ce téléphone ? Fais d'abord une sauvegarde si tu veux les garder.", "Oui, tout effacer", function () {
-      data = { capital: 0, devise: "FCFA", ops: [] };
+      data = emptyData(); shown = {};
       if (save()) { toast("Toutes les données ont été effacées."); render(); }
     });
   });
@@ -767,6 +1125,7 @@ nav button.active svg { transform: translateY(-1px) scale(1.08); }
   $("fMonth").value = monthOf(todayStr());
   $("sMonth").value = monthOf(todayStr());
   fillCats($("fCat"));
+  fillCats($("pCat"));
   setAddType("dep");
   render();
   // ---------- Installation (PWA) ----------

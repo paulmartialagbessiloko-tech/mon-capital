@@ -1,5 +1,5 @@
 // Mon Capital : fonctionne sans internet. Change VERSION à chaque mise à jour.
-const VERSION = "mon-capital-v4";
+const VERSION = "mon-capital-v5";
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
